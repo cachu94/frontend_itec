@@ -61,7 +61,7 @@ for (let usuario of usuarios) {
 }
 
 if (usuarioEncontrado == null) {
-    console.log('Usuario No Econtrado')
+    alert('Usuario No Econtrado')
 } else {
     console.log(`Nombre: ${usuarioEncontrado.first_name}`)
     console.log(`Apellido: ${usuarioEncontrado.last_name}`)
@@ -73,10 +73,16 @@ if (usuarioEncontrado == null) {
 
 // Reducir a un nuevo array los datos de los generos de los usuarios y contar cuantos usuarios hay de cada genero
 
-let generos = []
-for (let usuario of usuarios){
-    if (!generos.includes(usuario.gender)) {
-        generos.push(usuario.gender)
+const contarGeneros = usuarios.reduce((acum, usuario) => {
+    const genero = usuario.gender;
+    const existe = acum.find(item => item.genero === genero);
+
+    if (existe) {
+        existe.cantidad++;
+    } else {
+        acum.push({genero: genero, cantidad: 1});
     }
-}
-console.log(generos)
+    return acum;
+}, []);
+
+console.log(contarGeneros)
