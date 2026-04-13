@@ -1,5 +1,3 @@
-# frontend_itec
-
 Tarea: Funciones y Operadores Aritméticos
 Objetivo:
 Hacer un programa en JavaScript que trabaje con un array de usuarios generado con Mockaroo.

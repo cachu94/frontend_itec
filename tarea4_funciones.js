@@ -50,10 +50,9 @@ const usuarios = [{"id":1,"first_name":"Bernie","last_name":"Assiter","bank":"Ba
 {"id":50,"first_name":"Carey","last_name":"Anthiftle","bank":"Sparkasse Vogtland","city":"Baishi","country":"China","salary":15220.5,"expenses":4179.32}]
 
 function ahorro(usuario){
-  let ahorro_total = usuario.salary - usuario.expenses
-  return ahorro_total
+  let ahorro = usuario.salary - usuario.expenses
+  return ahorro
 }
-
 
 function balanceMensual(id, usuarios){
   let usuarioEncontrado = null
@@ -66,72 +65,58 @@ function balanceMensual(id, usuarios){
   if (!usuarioEncontrado) {
     console.log(`No existe usuario con el ID: ${id}`)
   } else {
-    console.log(`Nombre: ${usuarioEncontrado.last_name} ${usuarioEncontrado.first_name}`)
-    console.log(`Banco: ${usuarioEncontrado.bank}`)
-    console.log(`Ahorro Mensual: ${(ahorro(usuarioEncontrado))}`)
+    resultado = {
+      Nombre: `${usuarioEncontrado.last_name} ${usuarioEncontrado.first_name}`,
+      Banco: usuarioEncontrado.bank,
+      Ahorro: ahorro(usuarioEncontrado)
+    }
+    return resultado
   }
 
 }
 
 function clasificacionFinanciera(usuarios){
-  for (let usuario of usuarios){
-    let ahorroMensual = ahorro(usuario) 
-    let tipo_ahorro = ahorroMensual < 500 ? "Ahorro Bajo" :
-                      ahorroMensual < 1500 ? "Ahorro Medio" : "Ahorro Alto";
-    
-    console.log(`Usuario: ${usuario.last_name} ${usuario.first_name} Clasif. Financiera: ${tipo_ahorro} Ahorro: ${ahorroMensual}`)
-  }
+  const estadofinanciero = usuarios.map(usuario => {
+    const ahorroMensual = ahorro(usuario)
+    let tipo_ahorro = ahorroMensual < 500 ? "Ahorro Bajo" : ahorroMensual < 1500 ? "Ahorro Medio" : "Ahorro Alto"
+
+    usuario = {
+      "Nombre": `${usuario.last_name} ${usuario.first_name}`,
+      "Clas Financiera": tipo_ahorro,
+      "Ahorro": ahorroMensual
+    }
+    return usuario
+  })
+
+  return estadofinanciero
 }
 
-function ahorroPorBanco(usuarios){
-  const resumenPorBanco = usuarios.reduce((acum, usuario) => {
-    const banco = usuario.bank
+function ahorroPor(usuarios, unir_por){
+  const resumenPorAtributo = usuarios.reduce((acum, usuario) => {
+    const grupo = usuario[unir_por]
 
-    if (!acum[banco]){
-      acum[banco] = {
-        banco: banco,
+    if (!acum[grupo]){
+      acum[grupo] = {
+        [unir_por]: grupo,
         cantidadUsuarios: 0,
         ahorroTotal: 0
-      };
-    }
-
-    const ahorroMensual = ahorro(usuario);
-    acum[banco].cantidadUsuarios++;
-    acum[banco].ahorroTotal += ahorroMensual;
-
-    return acum
-
-  }, {})
-
-  console.log(resumenPorBanco)
-} // Nombre Banco - cant user x banco - ahorro x banco
-
-function ahorroPorPais(usuarios){
-  const resumenPorPais = usuarios.reduce((acum, usuario) => {
-    const pais = usuario.country;
-
-    if (!acum[pais]){
-      acum[pais] = {
-        pais: pais,
-        cantidadUsuarios: 0,
-        ahorroPais: 0
       };
     };
 
     const ahorroMensual = ahorro(usuario)
-    acum[pais].cantidadUsuarios++;
-    acum[pais].ahorroPais += ahorroMensual;
+    acum[grupo].cantidadUsuarios += 1;
+    acum[grupo].ahorroTotal += ahorroMensual;
 
     return acum
 
   }, {})
 
-  console.log(resumenPorPais)
+  return Object.values(resumenPorAtributo)
 }
 
-// let id = Number(prompt("Ingrese ID de Usuario: "))
-// balanceMensual(id, usuarios)
+let id = Number(prompt("Ingrese ID de Usuario: "))
+console.log(balanceMensual(id, usuarios))
 
-// clasificacionFinanciera(usuarios)
-// ahorroPorBanco(usuarios)
-ahorroPorPais(usuarios)
+console.log(clasificacionFinanciera(usuarios))
+console.log(ahorroPor(usuarios, "bank"))
+console.log(ahorroPor(usuarios, "country"))
