@@ -75,7 +75,7 @@ function renderizarAlbums(albums) {
         const masterId = album.master_id
 
         card.innerHTML = `
-        <img src="${imagen}" class="w-full h-full object-cover rounded-md mb-4 shadow-sm">
+        <img src="${imagen}" class="w-full h-48 object-cover rounded-md mb-4 shadow-sm">
         <h2 class="text-lg font-bold text-slate-800 mb-2 h-14 overflow-hidden">${titulo}</h2>
         <div class="flex gap-2 w-full justify-center mt-auto">
             <button class="detallesBtn bg-slate-700 text-white px-3 py-1 rounded-full text-sm hover:bg-slate-900 transition-colors">Ver Detalles</button>
