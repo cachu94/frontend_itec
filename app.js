@@ -10,7 +10,7 @@ const appState ={
     favoritos: JSON.parse(localStorage.getItem('favoritos')) || [],
     origenDetalle: 'albums'
 };
-
+const pantalla_por_defecto = contenedorAlbums.className;
 const DISCOGS_TOKEN = 'TVysyskeJLHLCBNKQWIkVGDJWFhMaUWGhIIHtRak';
 const BASE_URL = 'https://api.discogs.com';
 const URL_SEARCH = `${BASE_URL}/database/search`;
@@ -60,6 +60,7 @@ async function obtenerDetallesMaster(masterId) {
         const res = await fetch(url);
         if (!res.ok) throw new Error('Error al obtener detalles del álbum.');
         const data = await res.json();
+        console.log("Datos crudos del master:", data);
         return {
             generos: data.genres ? data.genres.join(', ') : 'Desconocido',
             estilos: data.styles ? data.styles.join(', ') : 'Desconocido',
@@ -74,10 +75,11 @@ async function obtenerDetallesMaster(masterId) {
 
 function renderizarVistaAlbums(albums, titulo = 'Álbumes') {
     contenedorAlbums.innerHTML = `
-        <div class="col-span-full mb-2>"
+        <div class="col-span-full mb-2">
             <h2 class="text-2xl font-bold text-slate-700">${titulo}</h2>
         </div>
     `;
+    contenedorAlbums.className = pantalla_por_defecto;
 
     albums.forEach(album => {
         const esFav = appState.favoritos.some(fav => fav.master_id === album.master_id);
@@ -125,20 +127,22 @@ async function cargarYRenderizarDetalle(album) {
 
 function renderizarVistaDetalle(album, detalle) {
     const cancionesHTML = (detalle.tracklist || []).map(
-        t => `<li class="py-2 border-b border-slate-200">${t.position || '-'} - ${t.title || 'Sin título'} (${t.duration || '--:--'})</li>`
-    ).join('');
+        (t, indice) => `<li class="py-2 border border-slate-200 flex justify-between items-center hover:bg-slate-100 rounded-md px-2 mb-1">
+        <span>${indice+1} - ${t.title || 'Sin título'}</span>
+        <span>${t.duration || '--:--'}</span></li>`).join('');
+    console.log("Detalle del álbum:", detalle);
 
     contenedorAlbums.className = 'p-4 max-w-5xl mx-auto';
     contenedorAlbums.innerHTML = `
-        <article class="bg-white rounded-2xl shadow-lg p-6>
+        <article class="bg-white rounded-2xl shadow-lg p-6">
             <button id="volverBtn" class="mb-4 bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg">Volver atras</button>
             <div class="grid md:grid-cols-2 gap-6">
                 <img src="${album.portada}" alt="${album.titulo}" class="w-full h-80 object-cover rounded-xl">
                 <div>
                     <h2 class="text-3xl font-bold mb-4">${album.titulo}</h2>
-                    <p><strong>Géneros:</strong> ${detalle.generos}</p>
-                    <p><strong>Estilos:</strong> ${detalle.estilos}</p>
-                    <p><strong>Año:</strong> ${detalle.año}</p>
+                    <p class="mb-4 border border-slate-200 rounded-md p-2"><strong>Géneros:</strong> ${detalle.generos}</p>
+                    <p class="mb-4 border border-slate-200 rounded-md p-2"><strong>Estilos:</strong> ${detalle.estilos}</p>
+                    <p class="mb-4 border border-slate-200 rounded-md p-2"><strong>Año:</strong> ${detalle.año}</p>
                 </div>
             </div>
             <section class="mt-6">
@@ -147,8 +151,22 @@ function renderizarVistaDetalle(album, detalle) {
             </section>
         </article>
     `;
-    
-    document.getElementById('volverBtn').addEventListener('click', () => history.back());
+
+    const volverBtn = document.getElementById('volverBtn');
+    volverBtn.addEventListener('click', volverDesdeDetalle);
+}
+
+function volverDesdeDetalle() {
+    contenedorAlbums.className = pantalla_por_defecto;
+
+    if (appState.origenDetalle === 'perfil') {
+        appState.vista = 'perfil';
+        renderizarVistaAlbums(appState.favoritos, 'Mis Favoritos');
+        return;
+    }
+
+    appState.vista = 'albums';
+    renderizarVistaAlbums(appState.albumsActuales, 'Discografía');
 }
 
 
@@ -192,7 +210,7 @@ botonMiPerfil.addEventListener('click', () => {
 });
 
 botonHome.addEventListener("click", () => {
-    contenedorAlbums.className = 'p-4 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+    contenedorAlbums.className = pantalla_por_defecto;
     buscarAlbumsAlAzar();
 });
 
@@ -207,13 +225,13 @@ window.addEventListener('popstate', async (event) => {
 
     if (vista === 'perfil') {
         appState.vista = 'perfil';
-        contenedorAlbums.className = 'p-4 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+        contenedorAlbums.className = pantalla_por_defecto;
         renderizarVistaAlbums(appState.favoritos, 'Mis favoritos');
         return;
     }
 
     appState.vista = 'albums';
-    contenedorAlbums.className = 'p-4 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+    contenedorAlbums.className = pantalla_por_defecto;
     renderizarVistaAlbums(appState.albumsActuales, 'Discografía');
     });
 
