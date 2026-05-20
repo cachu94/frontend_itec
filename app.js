@@ -88,19 +88,11 @@ function renderizarVistaAlbums(albums, titulo = 'Álbumes') {
         card.className = "bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 p-4 flex flex-col";
 
         card.innerHTML = `
-<<<<<<< HEAD
         <img src="${album.portada}" class="w-full h-56 object-cover rounded-md mb-4 shadow-sm" alt="${album.titulo}">
         <h3 class="text-lg font-bold text-slate-800 mb-3 min-h-[56px]">${album.titulo}</h3>
         <div class="flex gap-2 w-full justify-between mt-auto">
             <button class="detallesBtn bg-slate-700 text-white px-3 py-2 rounded-lg text-sm hover:bg-slate-900 transition-colors">Ver Detalles</button>
             <button class="botonFav text-2xl ${colorInicial}" aria-label="Favorito">&#x2665;</button>
-=======
-        <img src="${imagen}" class="w-full h-48 object-cover rounded-md mb-4 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-800 mb-2 h-14 overflow-hidden">${titulo}</h2>
-        <div class="flex gap-2 w-full justify-center mt-auto">
-            <button class="detallesBtn bg-slate-700 text-white px-3 py-1 rounded-full text-sm hover:bg-slate-900 transition-colors">Ver Detalles</button>
-            <button class="botonFav text-2xl ${colorInicial}">&#x2665;</button>
->>>>>>> cf8f4b7a16aa8364c4074d720d1e6f897a16e456
         </div>
         `;
 
