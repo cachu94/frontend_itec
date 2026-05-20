@@ -3,12 +3,27 @@ const botonMiPerfil = document.getElementById('perfilBtn');
 const buscador = document.getElementById('buscadorInput');
 const botonBuscar = document.getElementById('buscadorBtn');
 const contenedorAlbums = document.getElementById('contenedoralbums');
-let favoritos = JSON.parse(localStorage.getItem('favoritos')) || [];
+const appState ={
+    vista: 'albums', // album | detalle | perfil
+    albumsActuales: [],
+    albumSeleccionado: null,
+    favoritos: JSON.parse(localStorage.getItem('favoritos')) || [],
+    origenDetalle: 'albums'
+};
 
 const DISCOGS_TOKEN = 'TVysyskeJLHLCBNKQWIkVGDJWFhMaUWGhIIHtRak';
 const BASE_URL = 'https://api.discogs.com';
 const URL_SEARCH = `${BASE_URL}/database/search`;
 const URL_MASTER = `${BASE_URL}/masters`;
+
+function normalizarAlbum(album) {
+    return {
+        id: album.id,
+        master_id: album.master_id || album.id,
+        titulo: album.titulo || album.title || 'Sin titulo',
+        portada: album.portada || album.cover_image || ''
+    };
+}
 
 // Al hacer click en el botón de búsqueda, se obtiene el valor del input y se inicia la búsqueda
 botonBuscar.addEventListener('click', () => {
@@ -27,16 +42,14 @@ async function buscarAlbums(query) {
         const data = await res.json();
         
         // TRANSFORMAMOS DATOS PARA MOSTRAR SOLO LO NECESARIO
-        const albumsLimpios = data.results.map(album => ({
-            id: album.id,
-            master_id: album.master_id || album.id,
-            titulo: album.title,
-            portada: album.cover_image,
-            
-        }));
+        const albumsLimpios = data.results.map(normalizarAlbum);
+        appState.vista = 'albums';
+        appState.albumsActuales = albumsLimpios;
+        history.pushState({vista: 'albums'}, '');
+        renderizarVistaAlbums(appState.albumsActuales, 'Resultados de búsqueda');
 
         console.log("Datos Transformados:", albumsLimpios);
-        renderizarAlbums(albumsLimpios);
+        renderizarVistaAlbums(albumsLimpios);
     } catch (error) {
         contenedorAlbums.innerHTML = `<p>${error.message}</p>`};
 }
@@ -56,103 +69,152 @@ async function obtenerDetallesMaster(masterId) {
             contenedorAlbums.innerHTML = `<p>${error.message}</p>`;
             console.error("Error detallado:", error);
             return null;
-         }
+        }
     }
 
-function renderizarAlbums(albums) {
-    contenedorAlbums.innerHTML = '';
+function renderizarVistaAlbums(albums, titulo = 'Álbumes') {
+    contenedorAlbums.innerHTML = `
+        <div class="col-span-full mb-2>"
+            <h2 class="text-2xl font-bold text-slate-700">${titulo}</h2>
+        </div>
+    `;
 
     albums.forEach(album => {
-        const esFav = favoritos.some(fav => fav.master_id === album.master_id);
+        const esFav = appState.favoritos.some(fav => fav.master_id === album.master_id);
         const colorInicial = esFav ? 'text-red-500' : 'text-gray-500'
 
 
         const card = document.createElement('article');
-        card.className = "card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 p-4 flex flex-col items-center text-center";
-
-        const imagen = album.portada || album.cover_image
-        const titulo = album.titulo || album.title
-        const masterId = album.master_id
+        card.className = "bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 p-4 flex flex-col";
 
         card.innerHTML = `
-        <img src="${imagen}" class="w-full h-full object-cover rounded-md mb-4 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-800 mb-2 h-14 overflow-hidden">${titulo}</h2>
-        <div class="flex gap-2 w-full justify-center mt-auto">
-            <button class="detallesBtn bg-slate-700 text-white px-3 py-1 rounded-full text-sm hover:bg-slate-900 transition-colors">Ver Detalles</button>
-            <button class="botonFav text-2xl ${colorInicial}">&#x2665;</button>
+        <img src="${album.portada}" class="w-full h-56 object-cover rounded-md mb-4 shadow-sm" alt="${album.titulo}">
+        <h3 class="text-lg font-bold text-slate-800 mb-3 min-h-[56px]">${album.titulo}</h3>
+        <div class="flex gap-2 w-full justify-between mt-auto">
+            <button class="detallesBtn bg-slate-700 text-white px-3 py-2 rounded-lg text-sm hover:bg-slate-900 transition-colors">Ver Detalles</button>
+            <button class="botonFav text-2xl ${colorInicial}" aria-label="Favorito">&#x2665;</button>
         </div>
-        <div class="info-extra" id="extra-${masterId}" style="display: none;"></div>
         `;
 
         // Evento Favoritos
         const btnFav = card.querySelector(".botonFav");
-        btnFav.addEventListener('click', () => {
-            toggleFavorito(album, btnFav);
-        });
+        btnFav.addEventListener('click', () => toggleFavorito(album, btnFav));
 
         // Evento de Detalles
         const btnDetalles = card.querySelector('.detallesBtn');
 
-        btnDetalles.addEventListener('click', async () => {
-            const extraDiv = document.getElementById(`extra-${masterId}`);
-            if (extraDiv.style.display === 'block') {
-                extraDiv.style.display = 'none';
-                return    
-            }
-            
-            extraDiv.innerHTML = '<p>Cargando ...</p>';
-            extraDiv.style.display = 'block';
-
-            const detalle = await obtenerDetallesMaster(masterId);
-            if (detalle) {
-                const cancionesHTML = detalle.tracklist.map(t => `<li class="mt-2">${t.position} - ${t.title} (${t.duration})</li>`).join('');
-                extraDiv.innerHTML = `
-                <p><strong>Géneros:</strong> ${detalle.generos}</p>
-                <p><strong>Estilos:</strong> ${detalle.estilos}</p>
-                <p><strong>Año:</strong> ${detalle.año}</p>
-                <ul class="mt-4">${cancionesHTML}</ul>
-                `;
-            }
-        });
+        btnDetalles.addEventListener('click', () => abrirDetalle(album));
         contenedorAlbums.appendChild(card);
     });
-
 }
 
+async function abrirDetalle(album) {
+    appState.origenDetalle = appState.vista;
+    appState.albumSeleccionado = album;
+    appState.vista = 'detalle';
+    history.pushState({vista: 'detalle', masterID: album.master_id}, '');
+    await cargarYRenderizarDetalle(album);
+}
+
+async function cargarYRenderizarDetalle(album) {
+    contenedorAlbums.innerHTML = '<p class="text-slate-500 text-center col-span-full">Cargando detalles...</p>';
+    const detalle = await obtenerDetallesMaster(album.master_id);
+    if (!detalle) return;
+    renderizarVistaDetalle(album, detalle);
+}
+
+function renderizarVistaDetalle(album, detalle) {
+    const cancionesHTML = (detalle.tracklist || []).map(
+        t => `<li class="py-2 border-b border-slate-200">${t.position || '-'} - ${t.title || 'Sin título'} (${t.duration || '--:--'})</li>`
+    ).join('');
+
+    contenedorAlbums.className = 'p-4 max-w-5xl mx-auto';
+    contenedorAlbums.innerHTML = `
+        <article class="bg-white rounded-2xl shadow-lg p-6>
+            <button id="volverBtn" class="mb-4 bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg">Volver atras</button>
+            <div class="grid md:grid-cols-2 gap-6">
+                <img src="${album.portada}" alt="${album.titulo}" class="w-full h-80 object-cover rounded-xl">
+                <div>
+                    <h2 class="text-3xl font-bold mb-4">${album.titulo}</h2>
+                    <p><strong>Géneros:</strong> ${detalle.generos}</p>
+                    <p><strong>Estilos:</strong> ${detalle.estilos}</p>
+                    <p><strong>Año:</strong> ${detalle.año}</p>
+                </div>
+            </div>
+            <section class="mt-6">
+                <h3 class="text-xl font-semibold mb-3">Canciones:</h3>
+                <ul>${cancionesHTML}</ul>
+            </section>
+        </article>
+    `;
+    
+    document.getElementById('volverBtn').addEventListener('click', () => history.back());
+}
+
+
 function toggleFavorito(album, btn) {
-    const index = favoritos.findIndex(fav => fav.master_id === album.master_id);
+    const index = appState.favoritos.findIndex(fav => fav.master_id === album.master_id);
 
     if (index > -1) {
-        favoritos.splice(index, 1);
+        appState.favoritos.splice(index, 1);
         btn.classList.replace('text-red-500', 'text-gray-500');
     } else {
-        favoritos.push(album);
+        appState.favoritos.push(album);
         btn.classList.replace('text-gray-500', 'text-red-500');
     }
 
-    localStorage.setItem('favoritos', JSON.stringify(favoritos));
+    localStorage.setItem('favoritos', JSON.stringify(appState.favoritos));
 }
 
+async function buscarAlbumsAlAzar() {
+    contenedorAlbums.innerHTML = '<p class="text-slate-500 text-center w-full">Cargando álbumes...</p>';
+    try {
+        const randomPage = Math.floor(Math.random() * 100) + 1; // Obtener una página aleatoria para variar los resultados
+        const url = `${URL_SEARCH}?&type=master&page=${randomPage}&per_page=20&token=${DISCOGS_TOKEN}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Error al cargar álbumes');
+        const data = await res.json();
+        
+        appState.albumsActuales = data.results.map(normalizarAlbum);
+        appState.vista = 'albums';
+        history.pushState({vista: 'albums'}, '');
+        renderizarVistaAlbums(appState.albumsActuales);
+    } catch (err) {
+        contenedorAlbums.innerHTML = `<p class="text-red-600 text-center">${err.message}</p>`;
+    }
+}
 
 // PERFIL
 botonMiPerfil.addEventListener('click', () => {
-    renderizarAlbums(favoritos);
+    appState.vista = 'perfil';
+    history.pushState({vista: 'perfil'}, '');
+    renderizarVistaAlbums(appState.favoritos, 'Mis Favoritos');
 });
 
-botonHome.addEventListener("click", async () => {
-    async function buscarAlbumsAlAzar() {
-        contenedorAlbums.innerHTML = '<p class="text-slate-500 text-center w-full">Cargando álbumes...</p>';
-        try {
-            const randomPage = Math.floor(Math.random() * 100) + 1; // Obtener una página aleatoria para variar los resultados
-            const url = `${URL_SEARCH}?&type=master&page=${randomPage}&per_page=20&token=${DISCOGS_TOKEN}`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Error al cargar álbumes');
-            const data = await res.json();
-            renderizarAlbums(data.results);
-        } catch (err) {
-            contenedorAlbums.innerHTML = `<p class="text-red-600 text-center">${err.message}</p>`;
-        }
-    }
-
+botonHome.addEventListener("click", () => {
+    contenedorAlbums.className = 'p-4 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
     buscarAlbumsAlAzar();
 });
+
+window.addEventListener('popstate', async (event) => {
+    const vista = event.state?.vista;
+
+    if (vista === 'detalle' && appState.albumSeleccionado) {
+        await cargarYRenderizarDetalle(appState.albumSeleccionado);
+        appState.vista = 'detalle';
+    return;
+    }
+
+    if (vista === 'perfil') {
+        appState.vista = 'perfil';
+        contenedorAlbums.className = 'p-4 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+        renderizarVistaAlbums(appState.favoritos, 'Mis favoritos');
+        return;
+    }
+
+    appState.vista = 'albums';
+    contenedorAlbums.className = 'p-4 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+    renderizarVistaAlbums(appState.albumsActuales, 'Discografía');
+    });
+
+buscarAlbumsAlAzar();
