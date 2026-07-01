@@ -13,6 +13,7 @@ export const agregarGuardia = (vehiculo) => {
     guardiaActual.push(vehiculo);
     localStorage.setItem('glp_guardia', JSON.stringify(guardiaActual));
   }
+  return guardiaActual;
 };
 
 // Eliminamos un vehiculo de "Mi Guardia"
@@ -21,4 +22,5 @@ export const eliminarGuardia = (id) => {
   // Filtramos la lista dejando afuera el ID que queremos eliminar
   const nuevaGuardia = guardiaActual.filter((v) => v.id !== id);
   localStorage.setItem('glp_guardia', JSON.stringify(nuevaGuardia));
+  return nuevaGuardia;
 }
