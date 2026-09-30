@@ -61,7 +61,7 @@ export function Home(){
                 <div>
                     {carreras.map((carrera) => {
                         const fecha = carrera.date_start
-                        ? new Data(carrera.date_start).toLocalDateString('es-AR', {
+                        ? new Date(carrera.date_start).toLocaleDateString('es-AR', {
                             day: 'numeric',
                             month: 'long',
                             year: 'numeric'
